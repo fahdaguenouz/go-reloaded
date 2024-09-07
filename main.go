@@ -51,7 +51,7 @@ func main() {
 			res := ""
 			parenth:=false
 			temp := "" 
-			for _, ch := range data {
+			for i, ch := range data {
 				
 				if ch == '(' {
 					parenth = true
@@ -67,18 +67,44 @@ func main() {
 					temp = ""     
 				} else {
 					if parenth {
-						
+						// Inside parentheses, skip spaces and append characters
 						if ch != ' ' {
 							temp += string(ch)
 						}
 					} else {
-				
-						if ch > 32 && ch < 48 {
-							res += " " + string(ch) + " "
+						// Handling punctuation and spacing rules
+						if ch == '.' || ch == ',' || ch == '!' || ch == '?' || ch == ':' || ch == ';' {
+							// Trim any trailing space in res before punctuation
+							if len(res) > 0 && res[len(res)-1] == ' ' {
+								res = res[:len(res)-1]
+							}
+							res += string(ch) // Add punctuation
+							if i < len(data)-1 && data[i+1] != ' ' { 
+								// Ensure there's a space after punctuation if it's not the last character
+								res += " "
+							}
+						} else if ch == ' ' {
+							// Only add a space if the previous character is not a space or punctuation
+							if len(res) > 0 && res[len(res)-1] != ' ' && !strings.Contains(".,!?;:", string(res[len(res)-1])) {
+								res += " "
+							}
 						} else {
 							res += string(ch)
 						}
 					}
+					// if parenth {
+						
+					// 	if ch != ' ' {
+					// 		temp += string(ch)
+					// 	}
+					// } else {
+				
+					// 	if ch > 32 && ch < 48 {
+					// 		res += " " + string(ch) + " "
+					// 	} else {
+					// 		res += string(ch)
+					// 	}
+					// }
 				}
 				// if ch == '(' {
 				// 	parenth = true
@@ -123,7 +149,6 @@ func main() {
 					// Apply changes to the previous 'number' words
 					for j := 0; j < number; j++ {
 						if i-j-1 < 0 {
-						fmt.Println("the argument must be positive ")
 							break // Ensure index doesn't go negative
 						}
 			
