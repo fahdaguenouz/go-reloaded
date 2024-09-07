@@ -107,70 +107,192 @@ func main() {
 			for _, v := range datafile {
 				fmt.Printf("%s\n", v)
 			}
-
 			for i := 0; i < len(datafile); i++ {
+				
 				word := datafile[i]
+				if strings.HasPrefix(word, "(up") || strings.HasPrefix(word, "(low") || strings.HasPrefix(word, "(cap") {
+					// Extract the number from the argument, e.g., (up,2) -> number = 2
+					numStart := strings.Index(word, ",") + 1
+					numEnd := strings.Index(word, ")")
+					number, err := strconv.Atoi(word[numStart:numEnd])
+					if err != nil {
+						fmt.Println("Invalid input for number:", err)
+						return
+					}
+			
+					// Apply changes to the previous 'number' words
+					for j := 0; j < number; j++ {
+						if i-j-1 < 0 {
+						fmt.Println("the argument must be positive ")
+							break // Ensure index doesn't go negative
+						}
+			
+						if strings.HasPrefix(word, "(up") {
+							datafile[i-j-1] = ToUpper(datafile[i-j-1])
+						} else if strings.HasPrefix(word, "(low") {
+							datafile[i-j-1] = ToLower(datafile[i-j-1])
+						} else if strings.HasPrefix(word, "(cap") {
+							datafile[i-j-1] = ToUpper(string(datafile[i-j-1][0])) + ToLower(datafile[i-j-1][1:])
+						}
+					}
 
-				if word == "(up)" || word == "(low)" || word == "(cap)" {
-
-					if i+2 < len(datafile) && datafile[i+1] == "," {
-						number, err := strconv.Atoi(datafile[i+2])
-						if err != nil {
-							fmt.Println("Invalid input for number:", err)
+					if strings.HasPrefix(word, "(bin") {
+						numStart := strings.Index(word, ",") + 1
+						numEnd := strings.Index(word, ")")
+						number, err := strconv.Atoi(word[numStart:numEnd])
+						if err != nil || number != 1 {
+							fmt.Println("Invalid input for bin, expected (bin):", err)
 							return
 						}
-						fmt.Print(number)
-						for j := i - 2; number != 0; j-- {
-							
-							if word == "up" {
-								datafile[i-number] = ToUpper(datafile[i-number])
-								datafile[i] = ""
-								datafile[i+1] = ""
-								datafile[i+2] = ""
-								datafile[i+3] = ""
-
-								datafile[i-1] = ""
-							}
-							if word == "low" {
-								datafile[i-2] = ToLower(datafile[i-2])
-								datafile[i] = ""
-								datafile[i+1] = ""
-								datafile[i-1] = ""
-
-							}
-							if word == "cap" {
-								c := datafile[i-2]
-								datafile[i-2] = ToUpper(string(c[0])) + ToLower(string(c[1:]))
-								datafile[i] = ""
-								datafile[i+1] = ""
-								datafile[i-1] = ""
-							}
-						
+				
+						// Convert the previous word from binary to decimal
+						binNumber, err := strconv.ParseInt(datafile[i-2], 2, 64)
+						if err != nil {
+							fmt.Println("Invalid binary input:", err)
+							return
 						}
+						datafile[i-2] = strconv.FormatInt(binNumber, 10)
+				
+						// Clear the instruction
+						datafile[i] = ""
+						datafile[i+1] = ""
+						datafile[i-1] = ""
 					}
+				
+					// Handle hexadecimal conversion
+					if strings.HasPrefix(word, "(hex") {
+						numStart := strings.Index(word, ",") + 1
+						numEnd := strings.Index(word, ")")
+						number, err := strconv.Atoi(word[numStart:numEnd])
+						if err != nil || number != 1 {
+							fmt.Println("Invalid input for hex, expected (hex,1):", err)
+							return
+						}
+				
+						// Convert the previous word from hexadecimal to decimal
+						hexNumber, err := strconv.ParseInt(datafile[i-2], 16, 64)
+						if err != nil {
+							fmt.Println("Invalid hexadecimal input:", err)
+							return
+						}
+						datafile[i-2] = strconv.FormatInt(hexNumber, 10)
+				
+						// Clear the instruction
+						datafile[i] = ""
+						datafile[i+1] = ""
+						datafile[i-1] = ""
+					}
+			
+					// Clear the transformation instruction (up, low, cap) from the list
+					datafile[i] = ""
 				}
-				if word == "bin" {
-					number, err := strconv.ParseInt(datafile[i-2], 2, 64)
-					if err != nil {
-						fmt.Println("Invalid input:", err)
+				if strings.HasPrefix(word, "(bin") {
+					numStart := strings.Index(word, ",") + 1
+					numEnd := strings.Index(word, ")")
+					number, err := strconv.Atoi(word[numStart:numEnd])
+					if err != nil || number != 1 {
+						fmt.Println("Invalid input for bin, expected (bin,1):", err)
 						return
 					}
-					datafile[i-2] = strconv.FormatInt(number, 10)
+			
+					// Convert the previous word from binary to decimal
+					binNumber, err := strconv.ParseInt(datafile[i-1], 2, 64)
+					if err != nil {
+						fmt.Println("Invalid binary input:", err)
+						return
+					}
+					datafile[i-2] = strconv.FormatInt(binNumber, 10)
+			
+					// Clear the instruction
 					datafile[i] = ""
 					datafile[i+1] = ""
 					datafile[i-1] = ""
 				}
-				if word == "hex" {
-					number, err := strconv.ParseInt(datafile[i-2], 16, 64)
-					if err != nil {
-						fmt.Println("Invalid input:", err)
+			
+				// Handle hexadecimal conversion
+				if strings.HasPrefix(word, "(hex") {
+					numStart := strings.Index(word, ",") + 1
+					numEnd := strings.Index(word, ")")
+					number, err := strconv.Atoi(word[numStart:numEnd])
+					if err != nil || number != 1 {
+						fmt.Println("Invalid input for hex, expected (hex,1):", err)
 						return
 					}
-					datafile[i-2] = strconv.FormatInt(number, 10)
+			
+					// Convert the previous word from hexadecimal to decimal
+					hexNumber, err := strconv.ParseInt(datafile[i-1], 16, 64)
+					if err != nil {
+						fmt.Println("Invalid hexadecimal input:", err)
+						return
+					}
+					datafile[i-2] = strconv.FormatInt(hexNumber, 10)
+			
+					// Clear the instruction
 					datafile[i] = ""
 					datafile[i+1] = ""
 					datafile[i-1] = ""
 				}
+		
+				// if word == "(up)" || word == "(low)" || word == "(cap)" {
+
+				// 	if i+2 < len(datafile) && datafile[i+1] == "," {
+				// 		number, err := strconv.Atoi(datafile[i+2])
+				// 		if err != nil {
+				// 			fmt.Println("Invalid input for number:", err)
+				// 			return
+				// 		}
+				// 		fmt.Print(number)
+				// 		for j := i - 2; number != 0; j-- {
+							
+				// 			if word == "up" {
+				// 				datafile[i-number] = ToUpper(datafile[i-number])
+				// 				datafile[i] = ""
+				// 				datafile[i+1] = ""
+				// 				datafile[i+2] = ""
+				// 				datafile[i+3] = ""
+
+				// 				datafile[i-1] = ""
+				// 			}
+				// 			if word == "low" {
+				// 				datafile[i-2] = ToLower(datafile[i-2])
+				// 				datafile[i] = ""
+				// 				datafile[i+1] = ""
+				// 				datafile[i-1] = ""
+
+				// 			}
+				// 			if word == "cap" {
+				// 				c := datafile[i-2]
+				// 				datafile[i-2] = ToUpper(string(c[0])) + ToLower(string(c[1:]))
+				// 				datafile[i] = ""
+				// 				datafile[i+1] = ""
+				// 				datafile[i-1] = ""
+				// 			}
+						
+				// 		}
+				// 	}
+				// }
+				// if word == "(bin,1)" {
+				// 	number, err := strconv.ParseInt(datafile[i-2], 2, 64)
+				// 	if err != nil {
+				// 		fmt.Println("Invalid input bin:", err)
+				// 		return
+				// 	}
+				// 	datafile[i-2] = strconv.FormatInt(number, 10)
+				// 	datafile[i] = ""
+				// 	datafile[i+1] = ""
+				// 	datafile[i-1] = ""
+				// }
+				// if word == "(hex,1)" {
+				// 	number, err := strconv.ParseInt(datafile[i-2], 16, 64)
+				// 	if err != nil {
+				// 		fmt.Println("Invalid input hex:", err)
+				// 		return
+				// 	}
+				// 	datafile[i-2] = strconv.FormatInt(number, 10)
+				// 	datafile[i] = ""
+				// 	datafile[i+1] = ""
+				// 	datafile[i-1] = ""
+				// }
 
 			}
 			s := ""
