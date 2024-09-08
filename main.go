@@ -6,6 +6,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"go-reloaded/functions"
 )
 
 func main() {
@@ -56,7 +57,6 @@ func main() {
 				if ch == '(' {
 					parenth = true
 					temp = " (" 
-					
 				} else if ch == ')' {
 					parenth = false
 					if !strings.Contains(temp, ",") {
@@ -80,7 +80,7 @@ func main() {
 							}
 							res += string(ch) // Add punctuation
 							if i < len(data)-1 && data[i+1] != ' ' { 
-								// Ensure there's a space after punctuation if it's not the last character
+								// Ensure there's a space after the punctuation, but only if it's not the last character
 								res += " "
 							}
 						} else if ch == ' ' {
@@ -92,41 +92,9 @@ func main() {
 							res += string(ch)
 						}
 					}
-					// if parenth {
-						
-					// 	if ch != ' ' {
-					// 		temp += string(ch)
-					// 	}
-					// } else {
-				
-					// 	if ch > 32 && ch < 48 {
-					// 		res += " " + string(ch) + " "
-					// 	} else {
-					// 		res += string(ch)
-					// 	}
-					// }
+					
 				}
-				// if ch == '(' {
-				// 	parenth = true
-				// 	res += " " + string(ch) 
-				// } else if ch == ')' {
-				// 	parenth = false
-				// 	res += string(ch) + " " 
-				// } else {
-				// 	if parenth {
-				// 		if ch == ',' {
-				// 			res += string(ch)
-				// 		} else if ch != ' ' {
-				// 			res += string(ch)
-				// 		}
-				// 	} else {
-				// 		if ch > 32 && ch < 48 {
-				// 			res += " " + string(ch) + " "
-				// 		} else {
-				// 			res += string(ch)
-				// 		}
-				// 	}
-				// }
+				
 			}
 
 			datafile := strings.Fields(string(res))
@@ -149,15 +117,15 @@ func main() {
 					// Apply changes to the previous 'number' words
 					for j := 0; j < number; j++ {
 						if i-j-1 < 0 {
-							break // Ensure index doesn't go negative
+							break // To Verify the negativ enumber in the arguments 
 						}
 			
 						if strings.HasPrefix(word, "(up") {
-							datafile[i-j-1] = ToUpper(datafile[i-j-1])
+							datafile[i-j-1] = functions.ToUpper(datafile[i-j-1])
 						} else if strings.HasPrefix(word, "(low") {
-							datafile[i-j-1] = ToLower(datafile[i-j-1])
+							datafile[i-j-1] = functions.ToLower(datafile[i-j-1])
 						} else if strings.HasPrefix(word, "(cap") {
-							datafile[i-j-1] = ToUpper(string(datafile[i-j-1][0])) + ToLower(datafile[i-j-1][1:])
+							datafile[i-j-1] = functions.ToUpper(string(datafile[i-j-1][0])) + functions.ToLower(datafile[i-j-1][1:])
 						}
 					}
 
@@ -258,66 +226,6 @@ func main() {
 					datafile[i-1] = ""
 				}
 		
-				// if word == "(up)" || word == "(low)" || word == "(cap)" {
-
-				// 	if i+2 < len(datafile) && datafile[i+1] == "," {
-				// 		number, err := strconv.Atoi(datafile[i+2])
-				// 		if err != nil {
-				// 			fmt.Println("Invalid input for number:", err)
-				// 			return
-				// 		}
-				// 		fmt.Print(number)
-				// 		for j := i - 2; number != 0; j-- {
-							
-				// 			if word == "up" {
-				// 				datafile[i-number] = ToUpper(datafile[i-number])
-				// 				datafile[i] = ""
-				// 				datafile[i+1] = ""
-				// 				datafile[i+2] = ""
-				// 				datafile[i+3] = ""
-
-				// 				datafile[i-1] = ""
-				// 			}
-				// 			if word == "low" {
-				// 				datafile[i-2] = ToLower(datafile[i-2])
-				// 				datafile[i] = ""
-				// 				datafile[i+1] = ""
-				// 				datafile[i-1] = ""
-
-				// 			}
-				// 			if word == "cap" {
-				// 				c := datafile[i-2]
-				// 				datafile[i-2] = ToUpper(string(c[0])) + ToLower(string(c[1:]))
-				// 				datafile[i] = ""
-				// 				datafile[i+1] = ""
-				// 				datafile[i-1] = ""
-				// 			}
-						
-				// 		}
-				// 	}
-				// }
-				// if word == "(bin,1)" {
-				// 	number, err := strconv.ParseInt(datafile[i-2], 2, 64)
-				// 	if err != nil {
-				// 		fmt.Println("Invalid input bin:", err)
-				// 		return
-				// 	}
-				// 	datafile[i-2] = strconv.FormatInt(number, 10)
-				// 	datafile[i] = ""
-				// 	datafile[i+1] = ""
-				// 	datafile[i-1] = ""
-				// }
-				// if word == "(hex,1)" {
-				// 	number, err := strconv.ParseInt(datafile[i-2], 16, 64)
-				// 	if err != nil {
-				// 		fmt.Println("Invalid input hex:", err)
-				// 		return
-				// 	}
-				// 	datafile[i-2] = strconv.FormatInt(number, 10)
-				// 	datafile[i] = ""
-				// 	datafile[i+1] = ""
-				// 	datafile[i-1] = ""
-				// }
 
 			}
 			s := ""
@@ -340,28 +248,4 @@ func main() {
 		fmt.Println("less arguments please enter the input and the output files name")
 		os.Exit(1)
 	}
-}
-
-func ToUpper(s string) string {
-	var res []rune
-	for _, i := range s {
-		if i >= 'a' && i <= 'z' {
-			res = append(res, i-32)
-		} else {
-			res = append(res, i)
-		}
-	}
-	return string(res)
-}
-
-func ToLower(s string) string {
-	var res []rune
-	for _, i := range s {
-		if i >= 'A' && i <= 'Z' {
-			res = append(res, i+32)
-		} else {
-			res = append(res, i)
-		}
-	}
-	return string(res)
 }
