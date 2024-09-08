@@ -24,3 +24,7 @@ func ToLower(s string) string {
 	}
 	return string(res)
 }
+
+func IsPunctuation(ch byte) bool {
+	return ch == '.' || ch == ',' || ch == '!' || ch == '?' || ch == ':' || ch == ';'
+}

@@ -10,10 +10,8 @@ import (
 )
 
 func main() {
-
 	args := os.Args[1:]
 	Inextention := ""
-	
 	Ouextention := ""
 
 	if len(args) == 2 {
@@ -54,6 +52,7 @@ func main() {
 			res := ""
 			parenth := false
 			temp := ""
+			groupPonc := false
 			for i, ch := range data {
 
 				if ch == '(' {
@@ -75,23 +74,40 @@ func main() {
 						}
 					} else {
 						// Handling punctuation and spacing rules
-						if ch == '.' || ch == ',' || ch == '!' || ch == '?' || ch == ':' || ch == ';' {
-							// Trim any trailing space in res before punctuation
-							if len(res) > 0 && res[len(res)-1] == ' ' {
-								res = res[:len(res)-1]
-							}
-							res += string(ch) // Add punctuation
-							if i < len(data)-1 && data[i+1] != ' ' {
-								// Ensure there's a space after the punctuation, but only if it's not the last character
-								res += " "
-							}
-						} else if ch == ' ' {
-							// Only add a space if the previous character is not a space or punctuation
-							if len(res) > 0 && res[len(res)-1] != ' ' && !strings.Contains(".,!?;:", string(res[len(res)-1])) {
-								res += " "
+						if functions.IsPunctuation(ch) {
+							// Ensure only one punctuation group is handled
+							if !groupPonc {
+								// Trim any trailing space in res before punctuation
+								if len(res) > 0 && res[len(res)-1] == ' ' {
+									res = res[:len(res)-1]
+								}
+			
+								res += string(ch)
+			
+								// Continue handling the punctuation group
+								for i+1 < len(data) && functions.IsPunctuation(data[i+1]) {
+									i++
+									res += string(data[i])
+								}
+			
+								// Add space if next character is not punctuation or space
+								if i+1 < len(data) && data[i+1] != ' ' && !functions.IsPunctuation(data[i+1]) {
+									res += " "
+								}
+			
+								groupPonc = true
 							}
 						} else {
-							res += string(ch)
+							groupPonc = false // Reset after handling punctuation
+			
+							// Handle spaces and normal characters
+							if ch == ' ' {
+								if len(res) > 0 && res[len(res)-1] != ' ' && !functions.IsPunctuation(res[len(res)-1]) {
+									res += " "
+								}
+							} else {
+								res += string(ch)
+							}
 						}
 					}
 
