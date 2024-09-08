@@ -2,16 +2,18 @@ package main
 
 import (
 	"fmt"
+	"go-reloaded/functions"
 	"io"
 	"os"
 	"strconv"
 	"strings"
-	"go-reloaded/functions"
 )
 
 func main() {
+
 	args := os.Args[1:]
 	Inextention := ""
+	
 	Ouextention := ""
 
 	if len(args) == 2 {
@@ -50,21 +52,21 @@ func main() {
 				return
 			}
 			res := ""
-			parenth:=false
-			temp := "" 
+			parenth := false
+			temp := ""
 			for i, ch := range data {
-				
+
 				if ch == '(' {
 					parenth = true
-					temp = " (" 
+					temp = " ("
 				} else if ch == ')' {
 					parenth = false
 					if !strings.Contains(temp, ",") {
-						temp += ",1" 
+						temp += ",1"
 					}
-					temp += ")"   
-					res += temp + " " 
-					temp = ""     
+					temp += ")"
+					res += temp + " "
+					temp = ""
 				} else {
 					if parenth {
 						// Inside parentheses, skip spaces and append characters
@@ -79,7 +81,7 @@ func main() {
 								res = res[:len(res)-1]
 							}
 							res += string(ch) // Add punctuation
-							if i < len(data)-1 && data[i+1] != ' ' { 
+							if i < len(data)-1 && data[i+1] != ' ' {
 								// Ensure there's a space after the punctuation, but only if it's not the last character
 								res += " "
 							}
@@ -92,9 +94,9 @@ func main() {
 							res += string(ch)
 						}
 					}
-					
+
 				}
-				
+
 			}
 
 			datafile := strings.Fields(string(res))
@@ -102,7 +104,7 @@ func main() {
 				fmt.Printf("%s\n", v)
 			}
 			for i := 0; i < len(datafile); i++ {
-				
+
 				word := datafile[i]
 				if strings.HasPrefix(word, "(up") || strings.HasPrefix(word, "(low") || strings.HasPrefix(word, "(cap") {
 					// Extract the number from the argument, e.g., (up,2) -> number = 2
@@ -113,13 +115,13 @@ func main() {
 						fmt.Println("Invalid input for number:", err)
 						return
 					}
-			
+
 					// Apply changes to the previous 'number' words
 					for j := 0; j < number; j++ {
 						if i-j-1 < 0 {
-							break // To Verify the negativ enumber in the arguments 
+							break // To Verify the negativ enumber in the arguments
 						}
-			
+
 						if strings.HasPrefix(word, "(up") {
 							datafile[i-j-1] = functions.ToUpper(datafile[i-j-1])
 						} else if strings.HasPrefix(word, "(low") {
@@ -137,7 +139,7 @@ func main() {
 							fmt.Println("Invalid input for bin, expected (bin):", err)
 							return
 						}
-				
+
 						// Convert the previous word from binary to decimal
 						binNumber, err := strconv.ParseInt(datafile[i-2], 2, 64)
 						if err != nil {
@@ -145,13 +147,13 @@ func main() {
 							return
 						}
 						datafile[i-2] = strconv.FormatInt(binNumber, 10)
-				
+
 						// Clear the instruction
 						datafile[i] = ""
 						datafile[i+1] = ""
 						datafile[i-1] = ""
 					}
-				
+
 					// Handle hexadecimal conversion
 					if strings.HasPrefix(word, "(hex") {
 						numStart := strings.Index(word, ",") + 1
@@ -161,7 +163,7 @@ func main() {
 							fmt.Println("Invalid input for hex, expected (hex,1):", err)
 							return
 						}
-				
+
 						// Convert the previous word from hexadecimal to decimal
 						hexNumber, err := strconv.ParseInt(datafile[i-2], 16, 64)
 						if err != nil {
@@ -169,13 +171,13 @@ func main() {
 							return
 						}
 						datafile[i-2] = strconv.FormatInt(hexNumber, 10)
-				
+
 						// Clear the instruction
 						datafile[i] = ""
 						datafile[i+1] = ""
 						datafile[i-1] = ""
 					}
-			
+
 					// Clear the transformation instruction (up, low, cap) from the list
 					datafile[i] = ""
 				}
@@ -187,7 +189,7 @@ func main() {
 						fmt.Println("Invalid input for bin, expected (bin,1):", err)
 						return
 					}
-			
+
 					// Convert the previous word from binary to decimal
 					binNumber, err := strconv.ParseInt(datafile[i-1], 2, 64)
 					if err != nil {
@@ -195,13 +197,13 @@ func main() {
 						return
 					}
 					datafile[i-2] = strconv.FormatInt(binNumber, 10)
-			
+
 					// Clear the instruction
 					datafile[i] = ""
 					datafile[i+1] = ""
 					datafile[i-1] = ""
 				}
-			
+
 				// Handle hexadecimal conversion
 				if strings.HasPrefix(word, "(hex") {
 					numStart := strings.Index(word, ",") + 1
@@ -211,7 +213,7 @@ func main() {
 						fmt.Println("Invalid input for hex, expected (hex,1):", err)
 						return
 					}
-			
+
 					// Convert the previous word from hexadecimal to decimal
 					hexNumber, err := strconv.ParseInt(datafile[i-1], 16, 64)
 					if err != nil {
@@ -219,13 +221,12 @@ func main() {
 						return
 					}
 					datafile[i-2] = strconv.FormatInt(hexNumber, 10)
-			
+
 					// Clear the instruction
 					datafile[i] = ""
 					datafile[i+1] = ""
 					datafile[i-1] = ""
 				}
-		
 
 			}
 			s := ""
