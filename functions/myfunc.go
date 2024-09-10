@@ -39,61 +39,134 @@ func ProcessSingleQuotes(line string) string {
 	return res
 }
 
-// ApplyParenthesesLogic processes (up, low, cap, bin, hex) transformations
-// but leaves the text as is if it's part of a regular sentence.
+// Helper function to split the word and transformation marker
+func splitWordAndMarker(word string) (string, string) {
+	if strings.Contains(word, "(") && strings.Contains(word, ")") {
+		openParenIndex := strings.Index(word, "(")
+		closeParenIndex := strings.Index(word, ")")
+		if openParenIndex < closeParenIndex {
+			// Split into base word and marker
+			baseWord := word[:openParenIndex]
+			marker := word[openParenIndex:closeParenIndex+1]
+			return strings.TrimSpace(baseWord), marker
+		}
+	}
+	return word, ""
+}
+
+// ApplyParenthesesLogic processes transformations (up, low, cap, bin, hex)
 func ApplyParenthesesLogic(res string) string {
-	datafile := strings.Fields(res)
+	datafile := strings.Split(res, " ")
+
+	// Process transformations with arguments
 	for i := 0; i < len(datafile); i++ {
 		word := datafile[i]
 
-		// Process transformations (up, low, cap) only if they have a closing parenthesis
-		if (strings.HasPrefix(word, "(up") || strings.HasPrefix(word, "(low") || strings.HasPrefix(word, "(cap")) &&
-			strings.Contains(word, ")") {
+		// Separate word from any transformation marker
+		baseWord, marker := splitWordAndMarker(word)
 
-			// Extract the number part
-			numStart := strings.Index(word, ",")
-			numEnd := strings.Index(word, ")")
-			if numStart != -1 && numEnd != -1 {
-				number, err := strconv.Atoi(word[numStart+1 : numEnd])
-				if err != nil {
-					continue // Treat as invalid instruction, ignore this word
-				}
-
-				// Process the words before the transformation instruction
-				count := 0
-				for j := i - 1; j >= 0 && count < number; j-- {
-					if datafile[j] != "" {
-						count++
-						if strings.HasPrefix(word, "(up") {
-							datafile[j] = ToUpper(datafile[j])
-						} else if strings.HasPrefix(word, "(low") {
-							datafile[j] = ToLower(datafile[j])
-						} else if strings.HasPrefix(word, "(cap") {
-							// Capitalize first letter, lower the rest
-							datafile[j] = ToUpper(string(datafile[j][0])) + ToLower(datafile[j][1:])
-						}
+		if marker != "" {
+			// Handle (bin) and (hex) markers first
+			if strings.HasPrefix(marker, "(bin)") && i-1 >= 0 {
+				if IsValidBinary(datafile[i-1]) {
+					if binNumber, err := strconv.ParseInt(datafile[i-1], 2, 64); err == nil {
+						datafile[i-1] = strconv.FormatInt(binNumber, 10)
+					} else {
+						datafile[i] = baseWord + " invalid bin format"
 					}
+				} else {
+					datafile[i] = baseWord + " invalid bin format"
 				}
-				// Remove the transformation marker after applying it
-				datafile[i] = ""
-			}
+				datafile[i] = "" // Remove the (bin) marker
+				continue // Skip further processing for this marker
 
-		} else if strings.HasPrefix(word, "(bin") && strings.Contains(word, ")") && i-1 >= 0 && IsValidBinary(datafile[i-1]) {
-			binNumber, err := strconv.ParseInt(datafile[i-1], 2, 64)
-			if err == nil {
-				datafile[i-1] = strconv.FormatInt(binNumber, 10)
-				datafile[i] = ""
-			}
-		} else if strings.HasPrefix(word, "(hex") && strings.Contains(word, ")") && i-1 >= 0 && IsValidHex(datafile[i-1]) {
-			hexNumber, err := strconv.ParseInt(datafile[i-1], 16, 64)
-			if err == nil {
-				datafile[i-1] = strconv.FormatInt(hexNumber, 10)
-				datafile[i] = ""
+			} else if strings.HasPrefix(marker, "(hex)") && i-1 >= 0 {
+				if IsValidHex(datafile[i-1]) {
+					if hexNumber, err := strconv.ParseInt(datafile[i-1], 16, 64); err == nil {
+						datafile[i-1] = strconv.FormatInt(hexNumber, 10)
+					} else {
+						datafile[i] = baseWord + " invalid hex format"
+					}
+				} else {
+					datafile[i] = baseWord + " invalid hex format"
+				}
+				datafile[i] = "" // Remove the (hex) marker
+				continue // Skip further processing for this marker
 			}
 		}
 	}
 
-	// Return the processed result as a single string
+	// Process transformations without arguments
+	for i := 0; i < len(datafile); i++ {
+		word := datafile[i]
+
+		// Separate word from any transformation marker
+		baseWord, marker := splitWordAndMarker(word)
+
+		if marker != "" {
+			if strings.HasPrefix(marker, "(") && strings.HasSuffix(marker, ")") {
+				if strings.Contains(marker, ",") {
+					parts := strings.Split(marker[1:len(marker)-1], ",")
+					if len(parts) == 2 {
+						transformationType := strings.TrimSpace(parts[0])
+						argument := strings.TrimSpace(parts[1])
+
+						// Convert argument to integer
+						n, err := strconv.Atoi(argument)
+						if err != nil || n < 0 {
+							datafile[i] = baseWord + " invalid format"
+							continue
+						}
+
+						// Apply transformation based on type
+						if transformationType == "up" || transformationType == "low" || transformationType == "cap" {
+							if i-n >= 0 {
+								for j := i - n; j < i; j++ {
+									switch transformationType {
+									case "up":
+										datafile[j] = ToUpper(datafile[j])
+									case "low":
+										datafile[j] = ToLower(datafile[j])
+									case "cap":
+										datafile[j] = Capitalize(datafile[j])
+									}
+								}
+							} else {
+								datafile[i] = baseWord + " invalid format"
+							}
+						}
+						datafile[i] = "" // Remove the marker
+						continue
+					} else {
+						datafile[i] = baseWord + marker
+						continue
+					}
+				} else {
+					// Handle cases with no argument, e.g., (cap), (low), (up)
+					transformationType := strings.TrimSpace(marker[1 : len(marker)-1])
+					if i > 0 {
+						// Apply transformation to the single preceding word
+						switch transformationType {
+						case "up":
+							datafile[i-1] = ToUpper(datafile[i-1])
+						case "low":
+							datafile[i-1] = ToLower(datafile[i-1])
+						case "cap":
+							datafile[i-1] = Capitalize(datafile[i-1])
+						}
+					}
+					datafile[i] = "" // Remove the marker
+				}
+			} else {
+				// If marker is not recognized, treat it as text
+				datafile[i] = baseWord + marker
+			}
+		} else {
+			datafile[i] = baseWord
+		}
+	}
+
+	// Join the processed words into a single string and return
 	return strings.Join(datafile, " ")
 }
 
@@ -102,13 +175,17 @@ func ToUpper(s string) string {
 	for _, i := range s {
 		if i >= 'a' && i <= 'z' {
 			res = append(res, i-32)
-		}else if i=='é' {
-			res = append(res, 'É')
 		} else {
 			res = append(res, i)
 		}
 	}
 	return string(res)
+}
+func Capitalize(s string) string {
+	if len(s) == 0 {
+		return s
+	}
+	return strings.ToUpper(string(s[0])) + strings.ToLower(s[1:])
 }
 
 func ToLower(s string) string {
@@ -116,8 +193,6 @@ func ToLower(s string) string {
 	for _, i := range s {
 		if i >= 'A' && i <= 'Z' {
 			res = append(res, i+32)
-		}else if i=='é' {
-			res = append(res, 'É')
 		} else {
 			res = append(res, i)
 		}
@@ -168,6 +243,18 @@ func ReplaceAWithAn(text string) string {
 			if !startsWithVowelOrH(words[i+1]) {
 				// Revert 'an' back to 'a'
 				words[i] = "a"
+			}
+		}else if words[i] == "AN" {
+			// Check if the next word does NOT start with a vowel or 'h'
+			if !startsWithVowelOrH(words[i+1]) {
+				// Revert 'an' back to 'a'
+				words[i] = "A"
+			}
+		}else if words[i] == "A" {
+			// Check if the next word does NOT start with a vowel or 'h'
+			if !startsWithVowelOrH(words[i+1]) {
+				// Revert 'an' back to 'a'
+				words[i] = "AN"
 			}
 		}
 	}
