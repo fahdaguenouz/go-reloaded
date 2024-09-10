@@ -2,11 +2,10 @@ package main
 
 import (
 	"fmt"
-	"go-reloaded/functions"
-	"io"
 	"os"
-	"strconv"
 	"strings"
+
+	"go-reloaded/functions"
 )
 
 func main() {
@@ -38,151 +37,22 @@ func main() {
 			fmt.Println("The files Extention must be : '.txt' ")
 			os.Exit(1)
 		} else {
-			file, err := os.Open(input)
+			data, err := os.ReadFile(input)
 			if err != nil {
-				fmt.Println("Error :", err)
+				fmt.Println("Error reading the file:", err)
 				return
 			}
-			defer file.Close()
-			data, err := io.ReadAll(file)
-			if err != nil {
-				fmt.Println("Error: ", err)
-				return
-			}
-			res := ""
-			parenth := false
-			temp := ""
-			inPunctuationGroup := false
-			for i := 0; i < len(data); i++ {
-				ch := data[i]
-				if ch == '\n' {
-					res += "\n" // Preserve newlines in the input
-					continue
-				}
-				if ch == '(' {
-					parenth = true
-					temp = " ("
-				} else if ch == ')' {
-					parenth = false
-					if !strings.Contains(temp, ",") {
-						temp += ",1"
-					}
-					temp += ")"
-					res += temp + " "
-					temp = ""
-				} else {
-					if parenth {
-						// Inside parentheses, skip spaces and append characters
-						if ch != ' ' {
-							temp += string(ch)
-						}
-					} else {
-						if functions.IsPunctuation(ch) {
-							// Trim any trailing space before punctuation
-							if !inPunctuationGroup {
-								// If not already in a punctuation group, add a space before punctuation
-								if len(res) > 0 && res[len(res)-1] == ' ' {
-									res = res[:len(res)-1]
-								}
-								inPunctuationGroup = true
-							}
-							res += string(ch)// Add punctuation
+			lines := strings.Split(string(data), "\n")
+			finalResult := ""
 
-						} else {
-							if inPunctuationGroup {
-								// After a punctuation group, add a space if the next character is not punctuation or space
-								if len(res) > 0 && !functions.IsPunctuation(ch) && ch != ' ' {
-									res += " "
-								}
-								inPunctuationGroup = false
-							}
-							// Handle spaces and normal characters
-							if ch == ' ' {
-								if len(res) > 0 && res[len(res)-1] != ' ' && !functions.IsPunctuation(res[len(res)-1]) {
-									res += " "
-								}
-							} else {
-								res += string(ch)
-							}
-						}
-					}
-
-				}
-
+			for _, line := range lines {
+				res := functions.ProcessSingleQuotes(line)
+				res = functions.ReplaceAWithAn(res)
+				finalLine := functions.ApplyParenthesesLogic(res)
+				finalResult += finalLine + "\n"
 			}
 
-			datafile := strings.Fields(string(res))
-			for _, v := range datafile {
-				fmt.Printf("%s\n", v)
-			}
-			for i := 0; i < len(datafile); i++ {
-
-				word := datafile[i]
-				if strings.HasPrefix(word, "(up") || strings.HasPrefix(word, "(low") || strings.HasPrefix(word, "(cap") {
-					// Extract the number from the argument, e.g., (up,2) -> number = 2
-					numStart := strings.Index(word, ",") + 1
-					numEnd := strings.Index(word, ")")
-					number, err := strconv.Atoi(word[numStart:numEnd])
-					if err != nil {
-						fmt.Println("Invalid input for number:", err)
-						return
-					}
-
-					// Apply changes to the previous 'number' words
-					for j := 0; j < number; j++ {
-						if i-j-1 < 0 {
-							break // To Verify the negativ enumber in the arguments
-						}
-
-						if strings.HasPrefix(word, "(up") {
-							datafile[i-j-1] = functions.ToUpper(datafile[i-j-1])
-						} else if strings.HasPrefix(word, "(low") {
-							datafile[i-j-1] = functions.ToLower(datafile[i-j-1])
-						} else if strings.HasPrefix(word, "(cap") {
-							datafile[i-j-1] = functions.ToUpper(string(datafile[i-j-1][0])) + functions.ToLower(datafile[i-j-1][1:])
-						}
-					}
-					// Clear the transformation instruction (up, low, cap) from the list
-					datafile[i] = ""
-				}
-				if strings.HasPrefix(word, "(bin") {
-					// Ensure there is a valid binary string to convert
-					if i-1 >= 0 && functions.IsValidBinary(datafile[i-1]) {
-						binNumber, err := strconv.ParseInt(datafile[i-1], 2, 64)
-						if err != nil {
-							fmt.Println("Invalid binary input:", err)
-							return
-						}
-						datafile[i-1] = strconv.FormatInt(binNumber, 10)
-						// Clear the instruction (bin)
-						datafile[i] = ""
-					}
-				}
-
-				// Handle hexadecimal conversion
-				if strings.HasPrefix(word, "(hex") {
-					// Ensure there is a valid hexadecimal string to convert
-					if i-1 >= 0 && functions.IsValidHex(datafile[i-1]) {
-						hexNumber, err := strconv.ParseInt(datafile[i-1], 16, 64)
-						if err != nil {
-							fmt.Println("Invalid hexadecimal input:", err)
-							return
-						}
-						datafile[i-1] = strconv.FormatInt(hexNumber, 10)
-						// Clear the instruction (hex)
-						datafile[i] = ""
-					}
-				}
-
-			}
-			s := ""
-			for _, ch := range datafile {
-				if ch != "" { // Avoid empty strings
-					s += ch + " "
-				}
-			}
-			resultat := strings.Fields(s)
-			err = os.WriteFile(output, []byte(strings.Join(resultat, " ")), 0o644)
+			err = os.WriteFile(output, []byte(finalResult), 0o644)
 			if err != nil {
 				fmt.Println("Error writing to file:", err)
 				return
