@@ -1,1 +1,19 @@
-my name is the name of the (up) (cap,3)
+my name is the name of THE
+
+
+10
+2
+
+1E
+30
+
+
+my name is FAHD AGUENOUZ
+my name is fahd AGUENOUZ
+
+
+
+my name is  (up, the name of the ( up )
+my name is the name of the  invalid format
+
+
