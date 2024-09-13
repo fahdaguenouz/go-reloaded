@@ -1,6 +1,7 @@
 package functions
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -40,78 +41,81 @@ func ProcessSingleQuotes(line string) string {
 }
 
 // Add spaces around parentheses if they are attached to words
-
-// Add spaces around parentheses if they are attached to words
 func addSpacesAroundParentheses(input string) string {
-	// Add space before an opening parenthesis and after a closing parenthesis if attached to a word
-	input = strings.ReplaceAll(input, "(", " (")
-	input = strings.ReplaceAll(input, ")", ") ")
-	return input
+	var result strings.Builder
+	inParenthesis := false
+
+	for i, r := range input {
+		// Check if we are encountering an opening parenthesis
+		if r == '(' {
+			// Add a space before if it's attached to a word
+			if i > 0 && !strings.ContainsRune(" (", rune(input[i-1])) {
+				result.WriteRune(' ')
+			}
+			inParenthesis = true
+		} else if r == ')' {
+			// Add a space after if it's attached to a word
+			if inParenthesis && (i+1 < len(input) && !strings.ContainsRune(" )", rune(input[i+1]))) {
+				result.WriteRune(' ')
+			}
+			inParenthesis = false
+		}
+		result.WriteRune(r)
+	}
+
+	// If we end inside parentheses, add a space at the end
+	if inParenthesis {
+		result.WriteRune(' ')
+	}
+
+	return result.String()
 }
 
-func processBinaryHex(datafile []string, baseWord, marker string, i int) []string {
-	if strings.Contains(marker, "bin")  && i-1 >= 0 {
-		if IsValidBinary(datafile[i-1]) {
-			if binNumber, err := strconv.ParseInt(datafile[i-1], 2, 64); err == nil {
+func processBinaryHex(datafile []string, i int) []string {
+	previousWord := strings.TrimSpace(datafile[i-1])
+	marker := strings.TrimSpace(datafile[i])
+
+	if strings.Contains(marker, "bin") && i-1 >= 0 {
+		if IsValidBinary(previousWord) {
+			if binNumber, err := strconv.ParseInt(previousWord, 2, 64); err == nil {
 				datafile[i-1] = strconv.FormatInt(binNumber, 10)
-			} else {
-				datafile[i] = baseWord + " invalid bin format"
 			}
-		} else {
-			datafile[i] = baseWord + " invalid bin format"
 		}
 		datafile[i] = "" // Remove the (bin) marker
-	} else if strings.Contains(marker, "hex")  && i-1 >= 0 {
-		if IsValidHex(datafile[i-1]) {
-			if hexNumber, err := strconv.ParseInt(datafile[i-1], 16, 64); err == nil {
+	} else if strings.Contains(marker, "hex") && i-1 >= 0 {
+		if IsValidHex(previousWord) {
+			if hexNumber, err := strconv.ParseInt(previousWord, 16, 64); err == nil {
 				datafile[i-1] = strconv.FormatInt(hexNumber, 10)
-			} else {
-				datafile[i] = baseWord + " invalid hex format"
 			}
-		} else {
-			datafile[i] = baseWord + " invalid hex format"
 		}
 		datafile[i] = "" // Remove the (hex) marker
 	}
+
 	return datafile
 }
 
-func processTransformationsWithArgs(datafile []string, baseWord, marker string, i int) []string {
-	parts := strings.Split(marker[1:len(marker)-1], ",")
-	if len(parts) == 2 {
-		transformationType := strings.TrimSpace(parts[0])
-		argument := strings.TrimSpace(parts[1])
 
-		// Convert argument to integer
-		n, err := strconv.Atoi(argument)
-		if err != nil || n < 0 {
-			datafile[i] = baseWord + " invalid format"
-			return datafile
-		}
-
-		// Apply transformation based on type
-		if transformationType == "up" || transformationType == "low" || transformationType == "cap" {
-			if i-n >= 0 {
-				for j := i - n; j < i; j++ {
-					switch transformationType {
-					case "up":
-						datafile[j] = ToUpper(datafile[j])
-					case "low":
-						datafile[j] = ToLower(datafile[j])
-					case "cap":
-						datafile[j] = Capitalize(datafile[j])
-					}
-				}
-			} else {
-				datafile[i] = baseWord + " invalid format"
+// Apply transformations with arguments like (up, 2), (low, 3), etc.
+func processTransformationsWithArgs(datafile []string, transformationType string, n int, i int) []string {
+	// Ensure there are enough previous words to apply the transformation
+	if i-n >= 0 {
+		for j := i - n; j < i; j++ {
+			switch transformationType {
+			case "up":
+				datafile[j] = ToUpper(datafile[j])
+			case "low":
+				datafile[j] = ToLower(datafile[j])
+			case "cap":
+				datafile[j] = Capitalize(datafile[j])
 			}
 		}
-		datafile[i] = baseWord // Preserve the base word and remove the marker
 	}
+	// Remove the marker after processing the transformation
+	datafile[i] = ""
 	return datafile
 }
-
-func processTransformationsWithoutArgs(datafile []string, baseWord, marker string, i int) []string {
+// Process transformations without arguments
+func processTransformationsWithoutArgs(datafile []string, marker string, i int) []string {
 	transformationType := strings.TrimSpace(marker[1 : len(marker)-1])
 	if i > 0 {
 		switch transformationType {
@@ -127,53 +131,79 @@ func processTransformationsWithoutArgs(datafile []string, baseWord, marker strin
 	return datafile
 }
 
-// Helper function to split the word and transformation marker
-func splitWordAndMarker(word string) (string, string) {
-	if strings.Contains(word, "(") && strings.Contains(word, ")") {
-		openParenIndex := strings.Index(word, "(")
-		closeParenIndex := strings.Index(word, ")")
-		if openParenIndex < closeParenIndex {
-			// Split into base word and marker
-			baseWord := word[:openParenIndex]
-			marker := word[openParenIndex:closeParenIndex+1]
-			return strings.TrimSpace(baseWord), strings.TrimSpace(marker)
+
+
+
+
+// Apply transformations based on markers
+func ApplyParenthesesLogic(res string) string {
+	res = addSpacesAroundParentheses(res)
+	var datafile []string
+	word := ""
+
+	// Split the string into individual words and markers
+	for _, r := range res {
+		if r == '(' {
+			if len(word) > 0 {
+				datafile = append(datafile, word)
+				word = ""
+			}
+			word += string(r)
+		} else if r == ')' {
+			word += string(r)
+			datafile = append(datafile, word)
+			word = ""
+		} else if r == ' ' {
+			if len(word) > 0 {
+				datafile = append(datafile, word)
+				word = ""
+			}
+		} else {
+			word += string(r)
 		}
 	}
-	return word, ""
-}
 
-// ApplyParenthesesLogic processes transformations (up, low, cap, bin, hex)
-func ApplyParenthesesLogic(res string) string {
-	// Add spaces outside parentheses to separate transformations from words
-	res = addSpacesAroundParentheses(res)
-
-	datafile := strings.Split(res, " ")
+	if len(word) > 0 {
+		datafile = append(datafile, word)
+	}
 
 	// Handle transformations sequentially
 	for i := 0; i < len(datafile); i++ {
-		word := datafile[i]
-		baseWord, marker := splitWordAndMarker(word)
-		if marker != "" {
-			if strings.Contains(marker, "bin") || strings.Contains(marker, "hex") {
-				// Handle binary and hex conversions
-				datafile = processBinaryHex(datafile, baseWord, marker, i)
-			} else if strings.Contains(marker, ",") {
-				// Handle transformations with arguments (up, low, cap with n)
-				datafile = processTransformationsWithArgs(datafile, baseWord, marker, i)
-			} else {
-				// Handle transformations without arguments (up, low, cap)
-				datafile = processTransformationsWithoutArgs(datafile, baseWord, marker, i)
+		word := strings.TrimSpace(datafile[i])
+		fmt.Println(word)
+		if word != "" {
+			if word == "(bin)" || word == "(hex)" {
+				datafile = processBinaryHex(datafile, i)
+			} else if strings.HasPrefix(word, "(") && strings.HasSuffix(word, ")") {
+				marker := word
+
+				// Ensure the marker has a valid format
+				if strings.Contains(marker, ",") {
+					parts := strings.Split(marker[1:len(marker)-1], ",")
+					if len(parts) == 2 {
+						transformationType := strings.TrimSpace(parts[0])
+						argument := strings.TrimSpace(parts[1])
+
+						// Check if argument is a valid number
+						if n, err := strconv.Atoi(argument); err == nil && n >= 0 {
+							
+							// Process transformations with valid arguments
+							datafile = processTransformationsWithArgs(datafile, transformationType, n, i)
+						} else {
+							datafile[i] = "invalid format"
+						}
+					} else {
+						datafile[i] = "invalid format"
+					}
+				} else {
+					datafile = processTransformationsWithoutArgs(datafile, marker, i)
+				}
 			}
-		} else {
-			datafile[i] = baseWord
 		}
 	}
 
-	// Final cleaning step to remove extra spaces
 	return strings.TrimSpace(strings.Join(datafile, " "))
 }
-
-
 func ToUpper(s string) string {
 	var res []rune
 	for _, i := range s {

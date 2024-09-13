@@ -1,19 +1,19 @@
-my name is the name of THE
+my name is the name of THE  (cap, 3)
 
 
-10
+477
 2
 
-1E
+1E (hex )
 30
 
 
 my name is FAHD AGUENOUZ
-my name is fahd AGUENOUZ
+my name is fahd aguenouz (up, 2)
 
 
 
-my name is  (up, the name of the ( up )
-my name is the name of the  invalid format
+my Name  is (up, the name of the ( up )
+my name is  the name of the invalid format
 
 
