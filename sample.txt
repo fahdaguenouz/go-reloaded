@@ -1,18 +1,1 @@
-my name is the name of the(up) (cap, 3)
-
-
-111011101 (bin)
-10(bin)
-
-1E (hex    )
-1E(hex)
-
-
-my name is fahd aguenouz(up,2)
-my name is fahd aguenouz (up,             2)
-
-
-
-my name(cap) is (up, the name of the( up ) 
-my name IS (low) the name of the(up,-4) 
-
+é

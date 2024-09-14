@@ -42,13 +42,16 @@ func main() {
 				fmt.Println("Error reading the file:", err)
 				return
 			}
-			lines := strings.Split(string(data), "\n")
 			finalResult := ""
-
+			rawData := string(data)
+			// Split data into lines
+			lines := strings.Split(rawData, "\n")
+			
 			for _, line := range lines {
-				res := functions.ProcessSingleQuotes(line)
-				res = functions.ReplaceAWithAn(res)
-				finalLine := functions.ApplyParenthesesLogic(res)
+				res := functions.ApplyParenthesesLogic(line)
+				res = functions.ProcessSingleQuotes(res)
+				finalLine := functions.ReplaceAWithAn(res)
+				finalLine = functions.Ponctuation(finalLine)
 				finalResult += finalLine + "\n"
 			}
 
@@ -57,14 +60,14 @@ func main() {
 				fmt.Println("Error writing to file:", err)
 				return
 			}
-			fmt.Println("File processed successfully.")
+			fmt.Println("File processed successfully 'NADII' !!!.")
 		}
 
 	} else if len(args) > 2 {
 		fmt.Println("Too much arguments")
 		os.Exit(1)
 	} else if len(args) == 1 {
-		fmt.Println("less arguments please enter the input and the output files name")
+		fmt.Println("Less arguments please enter the input and the output files name")
 		os.Exit(1)
 	}
 }
