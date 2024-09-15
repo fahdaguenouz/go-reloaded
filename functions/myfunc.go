@@ -1,32 +1,30 @@
 package functions
 
 import (
-	"fmt"
+
 	"strconv"
 	"strings"
 )
-
 
 // ProcessSingleQuotes handles the single quote logic
 func ProcessSingleQuotes(text string) string {
 	result := ""
 	first := false
 	next := false
-	if len(text) <= 3 {
-		return text
-	}
 	for i, char := range text {
 		if char == '\'' {
 			// if single cote
 			if i == 0 {
-				// if is first char
+				// if its first char
 				result += string(char)
 				first = true
+				// Check if the next char is a space.
 				if text[i+1] == ' ' {
 					next = true
 				}
 			} else if i == len(text)-1 {
-				// if is last char
+				// If the single quote is the last character.
+				// Remove the last character from result if it is a space.
 				if text[i-1] == ' ' {
 					result = result[:len(result)-1]
 				}
@@ -37,6 +35,7 @@ func ProcessSingleQuotes(text string) string {
 					result += "'"
 					continue
 				}
+				// If the single quote is not the first one.
 				if !first {
 					// first cote
 					if result[len(result)-1] != ' ' {
@@ -78,9 +77,9 @@ func addSpacesAroundParentheses(input string) string {
 
 	for i := 0; i < len(input); i++ {
 		r := rune(input[i])
-
 		// Check if we are encountering an opening parenthesis
 		if r == '(' {
+			
 			// Add a space before if it's attached to a word
 			if i > 0 && !strings.ContainsRune(" (", rune(input[i-1])) {
 				result += " "
@@ -88,14 +87,19 @@ func addSpacesAroundParentheses(input string) string {
 			inParenthesis = true
 		} else if r == ')' {
 			// Add a space after if it's attached to a word
+			result += string(r)
 			if inParenthesis && (i+1 < len(input) && !strings.ContainsRune(" )", rune(input[i+1]))) {
 				result += " "
-			}
-			inParenthesis = false
-		}
-
-		// Add the current character to the result
-		result += string(r)
+				
+				}
+				inParenthesis = false
+				continue
+				}
+				
+				// Add the current character to the result
+				result += string(r)
+				
+				
 	}
 
 	// If we end inside parentheses, add a space at the end
@@ -107,13 +111,15 @@ func addSpacesAroundParentheses(input string) string {
 }
 
 func processBinaryHex(datafile []string, i int) []string {
+	
 	previousWord := strings.TrimSpace(datafile[i-1])
 	marker := strings.TrimSpace(datafile[i])
+	
 
 	if strings.Contains(marker, "bin") && i-1 >= 0 {
 		if IsValidBinary(previousWord) {
-			if binNumber, err := strconv.ParseInt(previousWord, 2, 64); err == nil {
-				datafile[i-1] = strconv.FormatInt(binNumber, 10)
+			if binNumber, err := strconv.ParseInt(previousWord, 2, 64); err == nil {// verifier transform to base 2
+				datafile[i-1] = strconv.FormatInt(binNumber, 10) // trnasform to decimal base 10
 			}
 		}
 		datafile[i] = "" // Remove the (bin) marker
@@ -141,8 +147,8 @@ func isNumber(word string) bool {
 func processTransformationsWithArgs(datafile []string, transformationType string, n int, i int) []string {
 	// Ensure there are enough previous words to apply the transformation
 	if n > 0 { // Only apply if n is positive
-		wordsCounted := 0
-		for j := i - 1; j >= 0 && wordsCounted < n; j-- {
+		c := 0
+		for j := i - 1; j >= 0 && c < n; j-- {
 			if datafile[j] != ""  && !IsPunctuation(datafile[j][len(datafile[j])-1]) && !isNumber(datafile[j]){
 				switch transformationType {
 				case "up":
@@ -152,7 +158,7 @@ func processTransformationsWithArgs(datafile []string, transformationType string
 				case "cap":
 					datafile[j] = Capitalize(datafile[j])
 				}
-				wordsCounted++
+				c++
 			}
 		}
 		// Remove the marker after processing the transformation
@@ -200,13 +206,16 @@ func ApplyParenthesesLogic(res string) string {
 	// Split the string into individual words and markers
 	for _, r := range res {
 		if r == '(' {
+	
+            
 			if len(word) > 0 {
 				datafile = append(datafile, word)
 				word = ""
-			}
-			word += string(r)
+				}
+				word += string(r)
 		} else if r == ')' {
 			word += string(r)
+			
 			datafile = append(datafile, word)
 			word = ""
 		} else if r == ' ' {
@@ -222,19 +231,19 @@ func ApplyParenthesesLogic(res string) string {
 	if len(word) > 0 {
 		datafile = append(datafile, word)
 	}
+	
 
 	// Handle transformations sequentially
 	for i := 0; i < len(datafile); i++ {
 		word := strings.TrimSpace(datafile[i])
-
 		if word != "" {
 			if word == "(bin)" || word == "(hex)" {
 				datafile = processBinaryHex(datafile, i)
 			} else if strings.HasPrefix(word, "(up") || strings.HasPrefix(word, "(cap") || strings.HasPrefix(word, "(low") {
 				marker := word
-				fmt.Println(datafile)
+		
 
-				// Ensure the marker has a valid format
+				// Ensure that the mark  has a valid format
 				if strings.Contains(marker, ",") && (i+1 < len(datafile) && strings.HasSuffix(datafile[i+1], ")") && len(datafile[i+1]) == 2) {
 					nextPart := strings.TrimSpace(datafile[i+1])
 
@@ -269,7 +278,6 @@ func ApplyParenthesesLogic(res string) string {
 			}
 		}
 	}
-
 	return strings.TrimSpace(strings.Join(datafile, " "))
 }
 
@@ -288,7 +296,7 @@ func Ponctuation(data string) string {
 		}
 
 		if IsPunctuation(ch) {
-			// Handle the case of a dot between two digits
+			// Handle the case of a dot between two digits 21.2
 			if ch == '.' && i > 0 && i < len(data)-1 && isDigit(data[i-1]) && isDigit(data[i+1]) {
 				// If the dot is between two digits, just add the dot without spaces
 				res += "."
@@ -385,25 +393,34 @@ func IsAlphanumeric(ch byte) bool {
 // ReplaceAWithAn replaces 'a' with 'an' if the next word begins with a vowel or 'h'.
 // It also converts 'an' back to 'a' if the next word does not start with a vowel or 'h'.
 func ReplaceAWithAn(text string) string {
-	words := strings.Fields(text) // Split the text into words
+	words := strings.Fields(text)
+	 // Split the text into words
 	for i := 0; i < len(words)-1; i++ {
 		// Check if the current word is 'a'
+		
 
 		// Check if the current word is 'a' or 'A'
-		if words[i] == "a" || words[i] == "A" {
+		if words[i] == "a" || words[i] == "A" || words[i]=="'a" ||words[i]=="'A" {
 			// Check if the next word starts with a vowel or 'h'
-			if startsWithVowelOrH(words[i+1]) {
-				// Replace 'a' with 'an' (preserve case)
+			if startsWithVowelOrH(words[i+1]) && words[i]!="'a" &&words[i]!="'A"{
+				// Replace 'a' with 'an' 
 				if words[i] == "A" {
 					words[i] = "An"
 				} else {
 					words[i] = "an"
 				}
+			}else if words[i+1] == "a'" || words[i+1] == "A'" {
+				// 'a a' or 'A A'
+				if words[i] == "'A" {
+					words[i] = "'An"
+				} else {
+					words[i] = "'an"
+				}
 			}
 		} else if words[i] == "an" || words[i] == "An" || words[i] == "AN" {
 			// Check if the next word does NOT start with a vowel or 'h'
 			if !startsWithVowelOrH(words[i+1]) {
-				// Revert 'an' back to 'a' (preserve case)
+				// Revert 'an' back to 'a' 
 				if words[i] == "AN" {
 					words[i] = "A"
 				} else if words[i] == "An" {

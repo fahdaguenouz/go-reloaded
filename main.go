@@ -47,10 +47,12 @@ func main() {
 			// Split data into lines
 			lines := strings.Split(rawData, "\n")
 			
+
+			
 			for _, line := range lines {
 				res := functions.ApplyParenthesesLogic(line)
-				res = functions.ProcessSingleQuotes(res)
-				finalLine := functions.ReplaceAWithAn(res)
+				 res= functions.ReplaceAWithAn(res)
+				 finalLine := functions.ProcessSingleQuotes(res)
 				finalLine = functions.Ponctuation(finalLine)
 				finalResult += finalLine + "\n"
 			}
