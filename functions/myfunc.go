@@ -106,7 +106,7 @@ func processBinaryHex(datafile []string, i int) []string {
 	
 	marker := strings.TrimSpace(datafile[i])
 	previousWord := ""
-	if len(datafile)>1{
+	if i > 0{
 		previousWord = strings.TrimSpace(datafile[i-1])
 	}
 
@@ -116,8 +116,7 @@ func processBinaryHex(datafile []string, i int) []string {
 				datafile[i-1] = strconv.FormatInt(binNumber, 10) // trnasform to decimal base 10
 			}
 		}
-		if i < len(datafile) {
-		
+		if i < len(datafile){
 			datafile = append(datafile[:i], datafile[i+1:]...)
 		} // Remove the (bin) marker
 	
@@ -128,7 +127,6 @@ func processBinaryHex(datafile []string, i int) []string {
 			}
 		}
 		if i < len(datafile) {
-		
 			datafile = append(datafile[:i], datafile[i+1:]...)
 		}// Remove the (hex) marker
 	}
