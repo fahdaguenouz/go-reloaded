@@ -1,7 +1,7 @@
 package functions
 
 import (
-
+	
 	"strconv"
 	"strings"
 )
@@ -19,19 +19,18 @@ func ProcessSingleQuotes(text string) string {
 				result += string(char)
 				first = true
 				// Check if the next char is a space.
-				if text[i+1] == ' ' {
+				if i+1 < len(text)&&text[i+1] == ' ' {
 					next = true
 				}
-			} else if i == len(text)-1 {
+			} else if i == len(text)-1 &&!first {
 				// If the single quote is the last character.
 				// Remove the last character from result if it is a space.
-				if text[i-1] == ' ' {
-					result = result[:len(result)-1]
-				}
+				
 				result += "'"
 			} else {
-				// your logical code
-				if IsAlphanumeric(text[i-1]) && IsAlphanumeric(text[i+1]) {
+			
+				if i > 0 && i < len(text)-1 &&
+					IsAlphanumeric(text[i-1]) && IsAlphanumeric(text[i+1]) {
 					result += "'"
 					continue
 				}
@@ -52,17 +51,15 @@ func ProcessSingleQuotes(text string) string {
 					if result[len(result)-1] == ' ' {
 						result = result[:len(result)-1]
 					}
-					ispunc := strings.Contains(",;:.!? ", string(text[i+1]))
 					result += "'"
-					if !ispunc {
-						result += " "
-					}
+					
 				}
 			}
 		} else {
 			// if not single cote
 			if next {
 				next = false
+				
 				continue
 			}
 			result += string(char)
@@ -74,12 +71,9 @@ func ProcessSingleQuotes(text string) string {
 func addSpacesAroundParentheses(input string) string {
 	result := ""
 	inParenthesis := false
-
-	for i := 0; i < len(input); i++ {
-		r := rune(input[i])
+	for i, r := range input {
 		// Check if we are encountering an opening parenthesis
 		if r == '(' {
-			
 			// Add a space before if it's attached to a word
 			if i > 0 && !strings.ContainsRune(" (", rune(input[i-1])) {
 				result += " "
@@ -90,16 +84,13 @@ func addSpacesAroundParentheses(input string) string {
 			result += string(r)
 			if inParenthesis && (i+1 < len(input) && !strings.ContainsRune(" )", rune(input[i+1]))) {
 				result += " "
-				
-				}
-				inParenthesis = false
-				continue
-				}
-				
-				// Add the current character to the result
-				result += string(r)
-				
-				
+			}
+			inParenthesis = false
+			continue
+		}
+
+		// Add the current character to the result
+		result += string(r)
 	}
 
 	// If we end inside parentheses, add a space at the end
@@ -112,24 +103,34 @@ func addSpacesAroundParentheses(input string) string {
 
 func processBinaryHex(datafile []string, i int) []string {
 	
-	previousWord := strings.TrimSpace(datafile[i-1])
-	marker := strings.TrimSpace(datafile[i])
 	
+	marker := strings.TrimSpace(datafile[i])
+	previousWord := ""
+	if len(datafile)>1{
+		previousWord = strings.TrimSpace(datafile[i-1])
+	}
 
-	if strings.Contains(marker, "bin") && i-1 >= 0 {
+	if strings.Contains(marker, "(bin)") {
 		if IsValidBinary(previousWord) {
 			if binNumber, err := strconv.ParseInt(previousWord, 2, 64); err == nil {// verifier transform to base 2
 				datafile[i-1] = strconv.FormatInt(binNumber, 10) // trnasform to decimal base 10
 			}
 		}
-		datafile[i] = "" // Remove the (bin) marker
-	} else if strings.Contains(marker, "hex") && i-1 >= 0 {
+		if i < len(datafile) {
+		
+			datafile = append(datafile[:i], datafile[i+1:]...)
+		} // Remove the (bin) marker
+	
+	} else if strings.Contains(marker, "(hex)"){
 		if IsValidHex(previousWord) {
 			if hexNumber, err := strconv.ParseInt(previousWord, 16, 64); err == nil {
 				datafile[i-1] = strconv.FormatInt(hexNumber, 10)
 			}
 		}
-		datafile[i] = "" // Remove the (hex) marker
+		if i < len(datafile) {
+		
+			datafile = append(datafile[:i], datafile[i+1:]...)
+		}// Remove the (hex) marker
 	}
 
 	return datafile
@@ -149,7 +150,7 @@ func processTransformationsWithArgs(datafile []string, transformationType string
 	if n > 0 { // Only apply if n is positive
 		c := 0
 		for j := i - 1; j >= 0 && c < n; j-- {
-			if datafile[j] != ""  && !IsPunctuation(datafile[j][len(datafile[j])-1]) && !isNumber(datafile[j]){
+			if datafile[j] != ""  && !IsPunctuation(rune(datafile[j][len(datafile[j])-1])) && !isNumber(datafile[j]){
 				switch transformationType {
 				case "up":
 					datafile[j] = ToUpper(datafile[j])
@@ -161,9 +162,15 @@ func processTransformationsWithArgs(datafile []string, transformationType string
 				c++
 			}
 		}
-		// Remove the marker after processing the transformation
-		datafile[i] = ""
-		datafile[i+1] = ""
+		// Remove the marker at index i by creating a new slice excluding that index
+		if i+1 < len(datafile) {
+		
+
+			datafile = append(datafile[:i], datafile[i+2:]...)
+		} else {
+			datafile = datafile[:i]
+		}
+
 	}
 	// If n is invalid, do not remove the marker
 	return datafile
@@ -172,15 +179,14 @@ func processTransformationsWithArgs(datafile []string, transformationType string
 // Process transformations without arguments
 func processTransformationsWithoutArgs(datafile []string, marker string, i int) []string {
 	transformationType := strings.TrimSpace(marker[1 : len(marker)-1])
-	// Traverse backwards to find the first non-punctuation word
 	if i > 0 {
 		j := i - 1
-		for j >= 0 && IsPunctuation(datafile[j][len(datafile[j])-1]) || isNumber(datafile[j]) {
-			j-- // Skip punctuation
+		for j >= 0 && i!=0 &&   isNumber(datafile[j]) {
+			j-- // Skip num
 		}
 		
 		// Apply the transformation to the first non-punctuation word
-		if j >= 0 && datafile[j] != "" {
+		if j >= 0 && datafile[j] != ""  {
 			switch transformationType {
 			case "up":
 				datafile[j] = ToUpper(datafile[j])
@@ -189,16 +195,24 @@ func processTransformationsWithoutArgs(datafile []string, marker string, i int) 
 			case "cap":
 				datafile[j] = Capitalize(datafile[j])
 			}
-		}
+			
+
+				}
 	}
 	
-	datafile[i] = ""
+	// Remove the marker at index i by creating a new slice excluding that index
+	if i < len(datafile) {
+		
+		datafile = append(datafile[:i], datafile[i+1:]...)
+	}
+
 	// Remove the marker after applying the transformation
 	return datafile
 }
 
 // Apply transformations based on markers
 func ApplyParenthesesLogic(res string) string {
+	
 	res = addSpacesAroundParentheses(res)
 	var datafile []string
 	word := ""
@@ -232,19 +246,22 @@ func ApplyParenthesesLogic(res string) string {
 		datafile = append(datafile, word)
 	}
 	
-
+	i := 0
 	// Handle transformations sequentially
-	for i := 0; i < len(datafile); i++ {
+	for i < len(datafile) {
+		
 		word := strings.TrimSpace(datafile[i])
 		if word != "" {
+			
 			if word == "(bin)" || word == "(hex)" {
 				datafile = processBinaryHex(datafile, i)
-			} else if strings.HasPrefix(word, "(up") || strings.HasPrefix(word, "(cap") || strings.HasPrefix(word, "(low") {
-				marker := word
-		
-
-				// Ensure that the mark  has a valid format
-				if strings.Contains(marker, ",") && (i+1 < len(datafile) && strings.HasSuffix(datafile[i+1], ")") && len(datafile[i+1]) == 2) {
+				i--
+				} else if strings.HasPrefix(word, "(up") || strings.HasPrefix(word, "(cap") || strings.HasPrefix(word, "(low") {
+					marker := word
+					
+					
+					// Ensure that the mark  has a valid format
+					if strings.Contains(marker, ",") && (i+1 < len(datafile) && strings.HasSuffix(datafile[i+1], ")") ) {
 					nextPart := strings.TrimSpace(datafile[i+1])
 
 					// Check if the next part contains only a number and a closing parenthesis
@@ -257,9 +274,10 @@ func ApplyParenthesesLogic(res string) string {
 							transformationType := strings.TrimSpace(marker[1 : len(marker)-1])
 							// Process transformations with valid positive arguments
 							if n >= 0 {
-								datafile = processTransformationsWithArgs(datafile, transformationType, n, i)
 
-								i++ // Skip the next index as we already processed it
+								datafile = processTransformationsWithArgs(datafile, transformationType, n, i)
+								i--
+							 // Skip the next index as we already processed it
 							} else {
 								// If the number is negative, keep the marker as text
 								datafile[i] = marker
@@ -273,10 +291,16 @@ func ApplyParenthesesLogic(res string) string {
 						datafile[i] = marker
 					}
 				} else if word == "(up)" || word == "(cap)" || word == "(low)" {
+					
 					datafile = processTransformationsWithoutArgs(datafile, marker, i)
+					i--
 				}
+				
 			}
+
 		}
+		i++
+		
 	}
 	return strings.TrimSpace(strings.Join(datafile, " "))
 }
@@ -287,15 +311,16 @@ func Ponctuation(data string) string {
 	res := ""
 	inPunctuationGroup := false
 
-	for i := 0; i < len(data); i++ {
-		ch := data[i]
+	for i, ch := range data {
+
+	
 
 		if ch == '\n' {
 			res += "\n" // Preserve newlines in the input
 			continue
 		}
 
-		if IsPunctuation(ch) {
+		if IsPunctuation(rune(ch)) {
 			// Handle the case of a dot between two digits 21.2
 			if ch == '.' && i > 0 && i < len(data)-1 && isDigit(data[i-1]) && isDigit(data[i+1]) {
 				// If the dot is between two digits, just add the dot without spaces
@@ -314,7 +339,7 @@ func Ponctuation(data string) string {
 		} else {
 			if inPunctuationGroup {
 				// After a punctuation group, add a space if the next character is not punctuation or space
-				if len(res) > 0 && !IsPunctuation(ch) && ch != ' ' {
+				if len(res) > 0 && !IsPunctuation(rune(ch)) && ch != ' ' {
 					res += " "
 				}
 				inPunctuationGroup = false
@@ -352,7 +377,15 @@ func Capitalize(s string) string {
 	if len(s) == 0 {
 		return s
 	}
-	return strings.ToUpper(string(s[0])) + strings.ToLower(s[1:])
+	firstRune := rune(s[0])
+    
+    if firstRune >= 'a' && firstRune <= 'z' {
+        return ToUpper(string(s[0])) + ToLower(s[1:]) // Capitalize first letter if it's lowercase
+    } else if firstRune >= 'A' && firstRune <= 'Z' {
+        return string(firstRune) + ToLower(s[1:]) // Keep first letter if it's already uppercase
+    } else {
+        return s // Return string unchanged if the first letter is non-English
+    }
 }
 
 func ToLower(s string) string {
@@ -367,7 +400,7 @@ func ToLower(s string) string {
 	return string(res)
 }
 
-func IsPunctuation(ch byte) bool {
+func IsPunctuation(ch rune) bool {
 	return ch == '.' || ch == ',' || ch == '!' || ch == '?' || ch == ':' || ch == ';'
 }
 
@@ -400,21 +433,14 @@ func ReplaceAWithAn(text string) string {
 		
 
 		// Check if the current word is 'a' or 'A'
-		if words[i] == "a" || words[i] == "A" || words[i]=="'a" ||words[i]=="'A" {
+		if words[i] == "a" || words[i] == "A"  {
 			// Check if the next word starts with a vowel or 'h'
-			if startsWithVowelOrH(words[i+1]) && words[i]!="'a" &&words[i]!="'A"{
+			if startsWithVowelOrH(words[i+1]) {
 				// Replace 'a' with 'an' 
 				if words[i] == "A" {
 					words[i] = "An"
 				} else {
 					words[i] = "an"
-				}
-			}else if words[i+1] == "a'" || words[i+1] == "A'" {
-				// 'a a' or 'A A'
-				if words[i] == "'A" {
-					words[i] = "'An"
-				} else {
-					words[i] = "'an"
 				}
 			}
 		} else if words[i] == "an" || words[i] == "An" || words[i] == "AN" {

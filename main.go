@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
-
 	"go-reloaded/functions"
 )
 
@@ -43,25 +43,38 @@ func main() {
 				return
 			}
 			finalResult := ""
+			
 			rawData := string(data)
 			// Split data into lines
 			lines := strings.Split(rawData, "\n")
 			
-
 			
-			for _, line := range lines {
+			for i, line := range lines {
 				res := functions.ApplyParenthesesLogic(line)
-				 res= functions.ReplaceAWithAn(res)
-				 finalLine := functions.ProcessSingleQuotes(res)
-				finalLine = functions.Ponctuation(finalLine)
-				finalResult += finalLine + "\n"
+				res= functions.ReplaceAWithAn(res)
+				finalLine := functions.Ponctuation(res)
+				 finalLine = functions.ProcessSingleQuotes(finalLine)
+				finalResult += finalLine
+				if i != len(lines) -1 {
+					finalResult+="\n"
+				}
 			}
 
-			err = os.WriteFile(output, []byte(finalResult), 0o644)
+			file, err := os.Create(output)
+			if err != nil {
+				fmt.Println("Error creating the file:", err)
+				return
+			}
+			defer file.Close()
+			
+
+			// Use io.WriteString to write the processed result to the file
+			_, err = io.WriteString(file, finalResult) // Pass the file as io.Writer and finalResult as the string
 			if err != nil {
 				fmt.Println("Error writing to file:", err)
 				return
 			}
+			
 			fmt.Println("File processed successfully 'NADII' !!!.")
 		}
 
