@@ -170,7 +170,7 @@ func processTransformationsWithArgs(datafile []string, transformationType string
 		}
 
 	}
-	// If n is invalid, do not remove the marker
+	// If n is invalid, do not remove the marker1f (cap, 6666666) (hex)
 	return datafile
 }
 
@@ -271,7 +271,7 @@ func ApplyParenthesesLogic(res string) string {
 						if n, err := strconv.Atoi(argument); err == nil && n >= 0 {
 							transformationType := strings.TrimSpace(marker[1 : len(marker)-1])
 							// Process transformations with valid positive arguments
-							if n >= 0 {
+							if n > 0  {
 
 								datafile = processTransformationsWithArgs(datafile, transformationType, n, i)
 								i--
